@@ -8,12 +8,15 @@
 <style>
 :root{color-scheme:dark;--ink:#edf6ff;--muted:#a1b3c9}
 *{box-sizing:border-box}
-body{margin:0;background:#08090b;color:var(--ink);font-family:system-ui,-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif}
-.app{width:100%;max-width:450px;min-height:100svh;margin:auto;background:#08090b;padding:calc(32px + env(safe-area-inset-top)) 32px calc(32px + env(safe-area-inset-bottom));display:flex;flex-direction:column;position:relative;overflow:hidden}
+html,body{margin:0;min-height:100%;background:#08090b;color:var(--ink);font-family:system-ui,-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif}
+body{min-height:100svh}
+.app{width:100%;max-width:450px;min-height:100svh;margin:auto;background:#08090b;padding:calc(32px + env(safe-area-inset-top)) 32px calc(104px + env(safe-area-inset-bottom));display:flex;flex-direction:column;position:relative;overflow:hidden}
 header{display:flex;align-items:center;justify-content:space-between;gap:12px}
 header h1{font-size:17px;font-weight:500;letter-spacing:-.4px;margin:0;color:#f5f5f7}
 main{flex:1;display:flex;flex-direction:column;justify-content:center;text-align:center;padding:0}
-.weekly{width:100%;margin:0 0 28px;padding:18px 16px 16px;border:1px solid #22252b;border-radius:22px;background:linear-gradient(180deg,#101116,#0b0c0f)}
+.mode-page{display:none;width:100%}
+.mode-page.active{display:flex;flex-direction:column;align-items:stretch}
+.weekly{width:100%;margin:0 0 22px;padding:17px 15px 14px;border:1px solid #22252b;border-radius:22px;background:linear-gradient(180deg,#101116,#0b0c0f)}
 .weekly-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
 .weekly-title{font-size:13px;font-weight:700;color:#f5f5f7;letter-spacing:-.2px}
 .weekly-meta{font-size:11px;color:#7f8792;text-align:right;line-height:1.4}
@@ -26,272 +29,401 @@ main{flex:1;display:flex;flex-direction:column;justify-content:center;text-align
 .refresh{width:auto;min-height:32px;padding:0 12px;border:1px solid #2b3139;border-radius:999px;background:#111318;color:#d8dde4;font-size:11px;font-weight:600;box-shadow:none}
 .refresh:hover:not(:disabled){background:#181b20}
 .refresh:disabled{background:#101216;color:#555b64}
-.machine{border:0;border-radius:0;background:none;box-shadow:none;margin:0 0 28px;padding:0;width:100%;position:relative}
+.machine{border:0;border-radius:0;background:none;box-shadow:none;margin:0 0 24px;padding:0;width:100%;position:relative}
 .window{height:200px;overflow:hidden;position:relative;mask-image:linear-gradient(to right,transparent,#000 18%,#000 82%,transparent)}
 .reel{display:flex;width:100%;will-change:transform}
 .number{flex:0 0 100%;min-width:0;height:200px;line-height:200px;font-size:clamp(112px,34vw,152px);font-weight:400;letter-spacing:-8px;color:#f5f5f7;text-shadow:none;font-variant-numeric:tabular-nums;text-align:center}
-.controls{margin:0;width:100%;display:flex;justify-content:center}
-button{cursor:pointer;touch-action:manipulation}
-#draw{width:180px;min-height:56px;border:0;border-radius:999px;background:#8bd6ff;color:#071a27;font:600 17px system-ui,'Apple SD Gothic Neo',sans-serif;box-shadow:none;transition:background .2s,transform .2s}
-#draw:hover:not(:disabled){background:#afe3ff}
-#draw:active:not(:disabled){transform:scale(.98)}
-#draw:focus-visible,.refresh:focus-visible{outline:3px solid #173b2c;outline-offset:4px}
-#draw:disabled{cursor:wait;background:#263b48;color:#a9c5d6}
+.mode-label{font-size:11px;color:#68717d;letter-spacing:1px;margin:-7px 0 12px;text-align:center}
+.controls{margin:0;width:100%;display:flex;flex-direction:column;align-items:center;gap:10px}
+.draw-button{width:180px;min-height:56px;border:0;border-radius:999px;background:#8bd6ff;color:#071a27;font:600 17px system-ui,'Apple SD Gothic Neo',sans-serif;box-shadow:none;transition:background .2s,transform .2s;cursor:pointer;touch-action:manipulation}
+.draw-button:hover:not(:disabled){background:#afe3ff}
+.draw-button:active:not(:disabled){transform:scale(.98)}
+.draw-button:focus-visible,.refresh:focus-visible,.reset-button:focus-visible,.tab-button:focus-visible{outline:3px solid #173b2c;outline-offset:4px}
+.draw-button:disabled{cursor:wait;background:#263b48;color:#a9c5d6}
+.reset-button{width:auto;min-height:32px;padding:5px 14px;border:0;border-radius:999px;background:transparent;color:#69727e;font-size:11px;font-weight:500;cursor:pointer;transition:color .2s,background .2s}
+.reset-button:hover:not(:disabled){color:#aeb8c4;background:#ffffff08}
+.reset-button:disabled{color:#343a43;cursor:not-allowed}
 .status{position:absolute;width:1px;height:1px;min-height:0;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
-.saved{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin:0 0 36px;padding:0;list-style:none;width:100%}
+.saved{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin:0 0 20px;padding:0;list-style:none;width:100%}
 .saved li{font-size:clamp(22px,6vw,28px);font-weight:500;line-height:44px;font-variant-numeric:tabular-nums;color:#464951}
 .saved li.filled{background:linear-gradient(100deg,#ff9eaf,#b6a7ff,#88d8ff,#9ce8bd,#ff9eaf);background-size:300% 100%;background-clip:text;-webkit-background-clip:text;color:transparent;animation:rgb-flow 16s ease-in-out infinite alternate}
+.history-note{font-size:10px;color:#656d78;margin:-9px 0 18px;text-align:center;line-height:1.5}
 @keyframes rgb-flow{from{background-position:0% 50%}to{background-position:100% 50%}}
-@media(min-width:600px){body{padding:0}.app{min-height:100svh;box-shadow:none}}
-@media(max-height:700px){.app{padding-top:20px;padding-bottom:20px}.weekly{margin-bottom:18px;padding:14px 14px 12px}.number,.window{height:170px}.number{line-height:170px}.machine{margin-bottom:18px}.saved{margin-bottom:24px}}
-@media(max-height:560px){.weekly{margin-bottom:10px}.weekly-balls{gap:5px}.ball{width:29px;height:29px;font-size:11px}.number,.window{height:140px}.number{line-height:140px}.saved{margin-bottom:16px}}
-@media(prefers-reduced-motion:reduce){#draw{transition:none}.saved li.filled{animation:none}}
+.bottom-nav{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:min(450px,100%);padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:linear-gradient(180deg,#08090b00 0%,#08090bf0 24%,#08090b 55%);z-index:20}
+.bottom-nav-inner{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:6px;border:1px solid #1f2329;border-radius:20px;background:#0d0f12e8;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.tab-button{min-height:48px;border:0;border-radius:15px;background:transparent;color:#6f7782;font-size:13px;font-weight:600;cursor:pointer;transition:background .2s,color .2s}
+.tab-button.active{background:#171b20;color:#f5f5f7;box-shadow:inset 0 0 0 1px #252b33}
+.tab-button:hover:not(.active){color:#aeb8c4;background:#ffffff05}
+@media(min-width:600px){body{padding:0}.app{min-height:100svh;box-shadow:none}.bottom-nav{bottom:12px;border-radius:22px}}
+@media(max-height:700px){.app{padding-top:20px;padding-bottom:100px}.weekly{margin-bottom:15px;padding:14px 14px 12px}.number,.window{height:170px}.number{line-height:170px}.machine{margin-bottom:16px}.saved{margin-bottom:15px}}
+@media(max-height:560px){.weekly{margin-bottom:8px}.weekly-balls{gap:5px}.ball{width:29px;height:29px;font-size:11px}.number,.window{height:140px}.number{line-height:140px}.saved{margin-bottom:10px}.draw-button{min-height:50px}}
+@media(prefers-reduced-motion:reduce){.draw-button,.reset-button,.tab-button{transition:none}.saved li.filled{animation:none}}
 </style>
 </head>
 <body>
 <div class="app">
 <header><h1>Dev Min Su</h1></header>
 <main>
-<section class="weekly" aria-label="지난주 로또 당첨번호">
-<div class="weekly-top">
-<div class="weekly-title">지난주 로또 6/45</div>
-<div class="weekly-meta" id="weeklyMeta">당첨번호 확인 중…</div>
-</div>
-<div class="weekly-balls" id="weeklyBalls" aria-live="polite" aria-atomic="true"></div>
-<div class="weekly-footer">
-<div class="weekly-status" id="weeklyStatus">동행복권 결과를 확인하고 있습니다.</div>
-<button type="button" class="refresh" id="refreshWeekly">새로고침</button>
-</div>
-</section>
+  <section class="mode-page active" id="normalPage" aria-labelledby="normalTab">
+    <section class="weekly" aria-label="지난주 로또 당첨번호">
+      <div class="weekly-top">
+        <div class="weekly-title">지난주 로또 6/45</div>
+        <div class="weekly-meta" id="weeklyMeta">당첨번호 확인 중…</div>
+      </div>
+      <div class="weekly-balls" id="weeklyBalls" aria-live="polite" aria-atomic="true"></div>
+      <div class="weekly-footer">
+        <div class="weekly-status" id="weeklyStatus">동행복권 결과를 확인하고 있습니다.</div>
+        <button type="button" class="refresh" id="refreshWeekly">새로고침</button>
+      </div>
+    </section>
 
-<div class="machine" aria-hidden="true">
-<div class="window"><div class="reel" id="reel"><div class="number">1</div></div></div>
-</div>
+    <div class="machine" aria-hidden="true">
+      <div class="window"><div class="reel" id="normalReel"><div class="number">1</div></div></div>
+    </div>
+    <div class="mode-label">일반 추첨 · 1~45 균등</div>
+    <p class="status" id="normalStatus" role="status" aria-live="polite" aria-atomic="true">준비되셨나요?</p>
+    <ol class="saved" id="normalSaved" aria-label="일반 추첨 번호 6자리"></ol>
+    <div class="controls">
+      <button type="button" class="draw-button" id="normalDraw">추첨</button>
+      <button type="button" class="reset-button" id="normalReset">초기화</button>
+    </div>
+  </section>
 
-<p class="status" id="status" role="status" aria-live="polite" aria-atomic="true">준비되셨나요?</p>
-<ol class="saved" id="saved" aria-label="저장된 추첨 번호 6자리"></ol>
-<div class="controls"><button type="button" id="draw">추첨</button></div>
+  <section class="mode-page" id="historyPage" aria-labelledby="historyTab">
+    <div class="machine" aria-hidden="true">
+      <div class="window"><div class="reel" id="historyReel"><div class="number">1</div></div></div>
+    </div>
+    <div class="mode-label">역대 번호 추첨 · 1182~1210회 데이터 가중</div>
+    <div class="history-note">첨부하신 표의 당첨번호 6개를 기준으로 출현 빈도가 높은 번호가 조금 더 자주 나옵니다.</div>
+    <p class="status" id="historyStatus" role="status" aria-live="polite" aria-atomic="true">준비되셨나요?</p>
+    <ol class="saved" id="historySaved" aria-label="역대 번호 추첨 번호 6자리"></ol>
+    <div class="controls">
+      <button type="button" class="draw-button" id="historyDraw">역대 번호 추첨</button>
+      <button type="button" class="reset-button" id="historyReset">초기화</button>
+    </div>
+  </section>
 </main>
 </div>
+
+<nav class="bottom-nav" aria-label="추첨 모드 선택">
+  <div class="bottom-nav-inner">
+    <button type="button" class="tab-button active" id="normalTab" data-mode="normal">일반 추첨</button>
+    <button type="button" class="tab-button" id="historyTab" data-mode="history">역대 번호 추첨</button>
+  </div>
+</nav>
 
 <script>
 'use strict';
 
-const reel = document.getElementById('reel');
-const button = document.getElementById('draw');
-const status = document.getElementById('status');
-const savedList = document.getElementById('saved');
 const weeklyMeta = document.getElementById('weeklyMeta');
 const weeklyBalls = document.getElementById('weeklyBalls');
 const weeklyStatus = document.getElementById('weeklyStatus');
 const refreshWeekly = document.getElementById('refreshWeekly');
 
-const storageKey = 'dev-min-su-picks-v1';
-const knownDrawNo = 1244;
-const knownDrawDate = new Date('2026-10-03T20:35:00+09:00');
-let picks = [];
+const modes = {
+  normal: {
+    page: document.getElementById('normalPage'),
+    reel: document.getElementById('normalReel'),
+    draw: document.getElementById('normalDraw'),
+    reset: document.getElementById('normalReset'),
+    saved: document.getElementById('normalSaved'),
+    status: document.getElementById('normalStatus'),
+    key: 'dev-min-su-picks-normal-v2',
+    label: '추첨'
+  },
+  history: {
+    page: document.getElementById('historyPage'),
+    reel: document.getElementById('historyReel'),
+    draw: document.getElementById('historyDraw'),
+    reset: document.getElementById('historyReset'),
+    saved: document.getElementById('historySaved'),
+    status: document.getElementById('historyStatus'),
+    key: 'dev-min-su-picks-history-v2',
+    label: '역대 번호 추첨'
+  }
+};
 
-try {
-  const stored = JSON.parse(localStorage.getItem(storageKey) || '[]');
-  if (Array.isArray(stored) && stored.length <= 6 && stored.every(n => Number.isInteger(n) && n >= 1 && n <= 45) && new Set(stored).size === stored.length) picks = stored;
-} catch (_) {}
-
-function renderSaved() {
-  savedList.replaceChildren(...Array.from({length:6}, (_, i) => {
-    const item = document.createElement('li');
-    item.textContent = picks[i] === undefined ? '·' : String(picks[i]);
-    item.className = picks[i] === undefined ? '' : 'filled';
-    item.style.animationDelay = `${-i * 1.2}s`;
-    item.setAttribute('aria-label', `${i + 1}번째: ${picks[i] === undefined ? '빈 자리' : picks[i] + '번'}`);
-    return item;
-  }));
-}
-
-function savePicks() {
-  try { localStorage.setItem(storageKey, JSON.stringify(picks)); } catch (_) {}
-  renderSaved();
-}
-
-let current = picks.length ? picks[picks.length - 1] : 1;
-reel.replaceChildren(numberElement(current));
-renderSaved();
+const tabButtons = [...document.querySelectorAll('.tab-button')];
+let activeMode = 'normal';
 let busy = false;
 
-function randomNumber() {
-  const available = [];
-  for (let number = 1; number <= 45; number++) {
-    if (!picks.includes(number)) available.push(number);
-  }
-  if (!available.length) throw new Error('사용 가능한 번호가 없습니다.');
-  const buffer = new Uint32Array(1);
-  const range = available.length;
-  const limit = Math.floor(4294967296 / range) * range;
-  do { crypto.getRandomValues(buffer); } while (buffer[0] >= limit);
-  return available[buffer[0] % range];
+const historyDraws = [
+  [1,7,9,17,27,38],[2,17,20,35,37,39],[6,27,30,36,38,42],[10,22,24,27,38,45],
+  [1,3,17,26,27,42],[1,4,16,23,31,41],[8,16,28,30,31,44],[3,6,18,29,35,39],
+  [5,12,21,33,37,40],[7,9,24,27,35,36],[1,2,4,16,20,32],[16,24,25,30,31,32],
+  [26,30,33,38,39,41],[1,5,7,26,28,43],[8,12,15,29,40,45],[3,15,27,33,34,36],
+  [3,13,15,24,33,37],[6,9,16,19,24,28],[10,16,23,36,39,40],[1,4,11,12,20,41],
+  [7,9,19,23,26,45],[9,19,29,35,37,38],[3,4,12,19,22,27],[5,13,26,29,37,40],
+  [2,8,13,16,23,28],[6,17,22,28,29,32],[14,16,23,25,31,37],[4,15,17,23,27,36],
+  [1,13,21,25,28,31]
+];
+
+const historyWeights = Array(46).fill(0);
+historyDraws.flat().forEach(n => historyWeights[n]++);
+
+function getMode(){
+  return modes[activeMode];
 }
 
-function numberElement(value) {
+function numberElement(value){
   const element = document.createElement('div');
   element.className = 'number';
   element.textContent = value;
   return element;
 }
 
-function escapeHtml(value) {
-  return String(value).replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
+function loadPicks(mode){
+  try{
+    const stored = JSON.parse(localStorage.getItem(mode.key) || '[]');
+    if(Array.isArray(stored) && stored.length <= 6 && stored.every(n => Number.isInteger(n) && n >= 1 && n <= 45) && new Set(stored).size === stored.length){
+      return stored;
+    }
+  }catch(_){ }
+  return [];
 }
 
-function formatDrawDate(dateText) {
+function savePicks(mode,picks){
+  try{ localStorage.setItem(mode.key,JSON.stringify(picks)); }catch(_){ }
+}
+
+const picksByMode = {
+  normal: loadPicks(modes.normal),
+  history: loadPicks(modes.history)
+};
+
+function renderSaved(modeName){
+  const mode = modes[modeName];
+  const picks = picksByMode[modeName];
+  mode.saved.replaceChildren(...Array.from({length:6},(_,i)=>{
+    const item = document.createElement('li');
+    item.textContent = picks[i] === undefined ? '·' : String(picks[i]);
+    item.className = picks[i] === undefined ? '' : 'filled';
+    item.style.animationDelay = `${-i * 1.2}s`;
+    item.setAttribute('aria-label',`${i+1}번째: ${picks[i] === undefined ? '빈 자리' : picks[i] + '번'}`);
+    return item;
+  }));
+}
+
+renderSaved('normal');
+renderSaved('history');
+
+modes.normal.reel.replaceChildren(numberElement(picksByMode.normal.at(-1) || 1));
+modes.history.reel.replaceChildren(numberElement(picksByMode.history.at(-1) || 1));
+
+function secureUint32(){
+  const buffer = new Uint32Array(1);
+  crypto.getRandomValues(buffer);
+  return buffer[0];
+}
+
+function uniformIndex(length){
+  if(length <= 0) throw new Error('빈 후보 목록입니다.');
+  const max = 4294967296;
+  const limit = Math.floor(max / length) * length;
+  let value;
+  do{ value = secureUint32(); }while(value >= limit);
+  return value % length;
+}
+
+function randomNormalNumber(picks){
+  const available = [];
+  for(let n = 1; n <= 45; n++){
+    if(!picks.includes(n)) available.push(n);
+  }
+  if(!available.length) throw new Error('사용 가능한 번호가 없습니다.');
+  return available[uniformIndex(available.length)];
+}
+
+function randomHistoryNumber(picks){
+  const available = [];
+  let totalWeight = 0;
+  for(let n = 1; n <= 45; n++){
+    if(!picks.includes(n) && historyWeights[n] > 0){
+      available.push(n);
+      totalWeight += historyWeights[n];
+    }
+  }
+  if(!available.length) throw new Error('역대 데이터에서 사용할 번호가 없습니다.');
+  const target = uniformIndex(totalWeight);
+  let cursor = 0;
+  for(const n of available){
+    cursor += historyWeights[n];
+    if(target < cursor) return n;
+  }
+  return available[available.length - 1];
+}
+
+function weightedPreviewText(){
+  const pairs = historyWeights.map((weight,n)=>({n,weight})).filter(x=>x.n>0 && x.weight>0).sort((a,b)=>b.weight-a.weight || a.n-b.n).slice(0,8);
+  return pairs.map(x=>`${x.n}(${x.weight})`).join(' · ');
+}
+
+document.getElementById('historyPage').title = `첨부 표 기준 출현 빈도 상위: ${weightedPreviewText()}`;
+
+function formatDrawDate(dateText){
   const parts = String(dateText || '').split('-');
-  if (parts.length === 3) return `${parts[0]}.${parts[1]}.${parts[2]}`;
+  if(parts.length === 3) return `${parts[0]}.${parts[1]}.${parts[2]}`;
   return String(dateText || '');
 }
 
-function renderWeekly(data) {
+function renderWeekly(data){
   const nums = [data.tm1WnNo,data.tm2WnNo,data.tm3WnNo,data.tm4WnNo,data.tm5WnNo,data.tm6WnNo].map(Number);
   const bonus = Number(data.bnsWnNo);
   weeklyMeta.textContent = `${data.ltEpsd}회 · ${formatDrawDate(data.ltRflYmd || data.drwNoDate)}`;
-  weeklyBalls.replaceChildren(...nums.map(n => {
+  weeklyBalls.replaceChildren(...nums.map(n=>{
     const span = document.createElement('span');
     span.className = 'ball';
     span.textContent = n;
     return span;
-  }), (() => { const span = document.createElement('span'); span.className = 'plus'; span.textContent = '+'; return span; })(), (() => { const span = document.createElement('span'); span.className = 'ball bonus'; span.textContent = bonus; span.setAttribute('aria-label', `보너스 ${bonus}번`); return span; })());
+  }),
+  (()=>{const span=document.createElement('span');span.className='plus';span.textContent='+';return span;})(),
+  (()=>{const span=document.createElement('span');span.className='ball bonus';span.textContent=bonus;span.setAttribute('aria-label',`보너스 ${bonus}번`);return span;})());
   weeklyStatus.textContent = '동행복권 최신 완료 회차를 표시합니다.';
 }
 
-async function fetchJson(url) {
-  const direct = await fetch(url, {method:'GET',cache:'no-store',headers:{Accept:'application/json,text/plain,*/*'}});
-  if (!direct.ok) throw new Error(`HTTP ${direct.status}`);
-  const text = await direct.text();
-  return JSON.parse(text);
+async function fetchJson(url){
+  const response = await fetch(url,{method:'GET',cache:'no-store',headers:{Accept:'application/json,text/plain,*/*'}});
+  if(!response.ok) throw new Error(`HTTP ${response.status}`);
+  return JSON.parse(await response.text());
 }
 
-async function fetchOfficial(drawNo) {
+async function fetchOfficial(drawNo){
   const officialUrl = `https://www.dhlottery.co.kr/lt645/selectPstLt645Info.do?srchLtEpsd=${drawNo}`;
   const oldOfficialUrl = `https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo=${drawNo}`;
   const proxy = url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-
   let data;
-  try { data = await fetchJson(officialUrl); } catch (_) {
-    try { data = await fetchJson(proxy(officialUrl)); } catch (_) {
-      try { data = await fetchJson(oldOfficialUrl); } catch (_) {
-        data = await fetchJson(proxy(oldOfficialUrl));
-      }
+  try{ data = await fetchJson(officialUrl); }
+  catch(_){
+    try{ data = await fetchJson(proxy(officialUrl)); }
+    catch(_){
+      try{ data = await fetchJson(oldOfficialUrl); }
+      catch(_){ data = await fetchJson(proxy(oldOfficialUrl)); }
     }
   }
-
-  if (data && data.returnValue === 'success') {
-    return {
-      ltEpsd: Number(data.drwNo),
-      drwtNo: [data.drwtNo1,data.drwtNo2,data.drwtNo3,data.drwtNo4,data.drwtNo5,data.drwtNo6].map(Number),
-      bnsWnNo: Number(data.bnusNo),
-      ltRflYmd: data.drwNoDate
-    };
+  if(data && data.returnValue === 'success'){
+    return {ltEpsd:Number(data.drwNo),drwtNo:[data.drwtNo1,data.drwtNo2,data.drwtNo3,data.drwtNo4,data.drwtNo5,data.drwtNo6].map(Number),bnsWnNo:Number(data.bnusNo),ltRflYmd:data.drwNoDate};
   }
-
   const row = data?.data?.list?.[0];
-  if (!row) throw new Error('당첨결과가 아직 발표되지 않았습니다.');
-
-  return {
-    ltEpsd: Number(row.ltEpsd),
-    tm1WnNo: Number(row.tm1WnNo),
-    tm2WnNo: Number(row.tm2WnNo),
-    tm3WnNo: Number(row.tm3WnNo),
-    tm4WnNo: Number(row.tm4WnNo),
-    tm5WnNo: Number(row.tm5WnNo),
-    tm6WnNo: Number(row.tm6WnNo),
-    bnsWnNo: Number(row.bnsWnNo),
-    ltRflYmd: row.ltRflYmd
-  };
+  if(!row) throw new Error('당첨결과가 아직 발표되지 않았습니다.');
+  return {ltEpsd:Number(row.ltEpsd),tm1WnNo:Number(row.tm1WnNo),tm2WnNo:Number(row.tm2WnNo),tm3WnNo:Number(row.tm3WnNo),tm4WnNo:Number(row.tm4WnNo),tm5WnNo:Number(row.tm5WnNo),tm6WnNo:Number(row.tm6WnNo),bnsWnNo:Number(row.bnsWnNo),ltRflYmd:row.ltRflYmd};
 }
 
-function normalizeWeekly(data) {
-  return {
-    ltEpsd: Number(data.ltEpsd),
-    tm1WnNo: Number(data.tm1WnNo ?? data.drwtNo?.[0]),
-    tm2WnNo: Number(data.tm2WnNo ?? data.drwtNo?.[1]),
-    tm3WnNo: Number(data.tm3WnNo ?? data.drwtNo?.[2]),
-    tm4WnNo: Number(data.tm4WnNo ?? data.drwtNo?.[3]),
-    tm5WnNo: Number(data.tm5WnNo ?? data.drwtNo?.[4]),
-    tm6WnNo: Number(data.tm6WnNo ?? data.drwtNo?.[5]),
-    bnsWnNo: Number(data.bnsWnNo),
-    ltRflYmd: data.ltRflYmd
-  };
+function normalizeWeekly(data){
+  return {ltEpsd:Number(data.ltEpsd),tm1WnNo:Number(data.tm1WnNo ?? data.drwtNo?.[0]),tm2WnNo:Number(data.tm2WnNo ?? data.drwtNo?.[1]),tm3WnNo:Number(data.tm3WnNo ?? data.drwtNo?.[2]),tm4WnNo:Number(data.tm4WnNo ?? data.drwtNo?.[3]),tm5WnNo:Number(data.tm5WnNo ?? data.drwtNo?.[4]),tm6WnNo:Number(data.tm6WnNo ?? data.drwtNo?.[5]),bnsWnNo:Number(data.bnsWnNo),ltRflYmd:data.ltRflYmd};
 }
 
-function estimateLatestDrawNo() {
-  const now = Date.now();
-  const elapsedWeeks = Math.floor((now - knownDrawDate.getTime()) / (7 * 24 * 60 * 60 * 1000));
-  return Math.max(1, knownDrawNo + elapsedWeeks);
+const knownDrawNo = 1244;
+const knownDrawDate = new Date('2026-10-03T20:35:00+09:00');
+
+function estimateLatestDrawNo(){
+  const elapsedWeeks = Math.floor((Date.now() - knownDrawDate.getTime()) / (7 * 24 * 60 * 60 * 1000));
+  return Math.max(1,knownDrawNo + elapsedWeeks);
 }
 
-async function loadWeeklyResult() {
+async function loadWeeklyResult(){
   refreshWeekly.disabled = true;
   weeklyMeta.textContent = '최신 회차 확인 중…';
   weeklyStatus.textContent = '동행복권 결과를 확인하고 있습니다.';
-  try {
-    let drawNo = estimateLatestDrawNo();
+  try{
+    const drawNo = estimateLatestDrawNo();
     let found = null;
-    for (let i = 0; i < 4; i++) {
-      try {
-        const raw = await fetchOfficial(drawNo - i);
-        found = normalizeWeekly(raw);
+    for(let i=0;i<4;i++){
+      try{
+        found = normalizeWeekly(await fetchOfficial(drawNo-i));
         break;
-      } catch (_) {}
+      }catch(_){ }
     }
-    if (!found) throw new Error('조회 가능한 최신 회차를 찾지 못했습니다.');
+    if(!found) throw new Error('조회 가능한 최신 회차를 찾지 못했습니다.');
     renderWeekly(found);
-  } catch (error) {
+  }catch(error){
     weeklyMeta.textContent = '조회 실패';
     weeklyBalls.replaceChildren();
     weeklyStatus.textContent = '네트워크 또는 동행복권 접속을 확인해 주세요.';
     console.error(error);
-  } finally {
+  }finally{
     refreshWeekly.disabled = false;
   }
 }
 
-refreshWeekly.addEventListener('click', loadWeeklyResult);
-loadWeeklyResult();
-setInterval(loadWeeklyResult, 60 * 60 * 1000);
+function switchMode(modeName){
+  if(busy) return;
+  activeMode = modeName;
+  for(const [name,mode] of Object.entries(modes)) mode.page.classList.toggle('active',name === modeName);
+  tabButtons.forEach(btn=>btn.classList.toggle('active',btn.dataset.mode === modeName));
+}
 
-button.addEventListener('click', async () => {
-  if (busy) return;
+tabButtons.forEach(btn=>btn.addEventListener('click',()=>switchMode(btn.dataset.mode)));
+
+function resetCurrent(){
+  if(busy) return;
+  const mode = getMode();
+  picksByMode[activeMode] = [];
+  savePicks(mode,[]);
+  mode.reel.replaceChildren(numberElement(1));
+  mode.status.textContent = '번호를 초기화했습니다.';
+  renderSaved(activeMode);
+}
+
+modes.normal.reset.addEventListener('click',resetCurrent);
+modes.history.reset.addEventListener('click',resetCurrent);
+
+async function drawForMode(modeName){
+  if(busy || modeName !== activeMode) return;
   busy = true;
-  button.disabled = true;
-  button.textContent = '추첨 중…';
-  status.textContent = '행운의 번호를 고르고 있어요…';
+  const mode = modes[modeName];
+  mode.draw.disabled = true;
+  mode.reset.disabled = true;
+  mode.draw.textContent = modeName === 'history' ? '추첨 중…' : '추첨 중…';
+  mode.status.textContent = '행운의 번호를 고르고 있어요…';
+
   let animation;
-  try {
-    if (picks.length >= 6) { picks = []; savePicks(); current = 1; }
-    const result = randomNumber();
+  try{
+    let picks = picksByMode[modeName];
+    if(picks.length >= 6){
+      picks = [];
+      picksByMode[modeName] = picks;
+      savePicks(mode,picks);
+    }
+
+    const result = modeName === 'history' ? randomHistoryNumber(picks) : randomNormalNumber(picks);
+    const current = picks.at(-1) || 1;
     const steps = 45 * 5 + (result - current + 45) % 45;
     const fragment = document.createDocumentFragment();
-    for (let i = 0; i <= steps; i++) fragment.appendChild(numberElement((current - 1 + i) % 45 + 1));
-    reel.replaceChildren(fragment);
+    for(let i=0;i<=steps;i++) fragment.appendChild(numberElement(((current - 1 + i) % 45) + 1));
+    mode.reel.replaceChildren(fragment);
+
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (!reduced && typeof reel.animate === 'function') {
-      animation = reel.animate([{transform:'translateX(0)'},{transform:`translateX(-${steps * 100}%)`}], {duration:3600,easing:'cubic-bezier(0.12, 0.65, 0.18, 1)',fill:'forwards'});
+    if(!reduced && typeof mode.reel.animate === 'function'){
+      animation = mode.reel.animate([{transform:'translateX(0)'},{transform:`translateX(-${steps * 100}%)`}],{duration:3600,easing:'cubic-bezier(0.12,0.65,0.18,1)',fill:'forwards'});
       await animation.finished;
     }
-    current = result;
-    if (animation) animation.cancel();
-    reel.replaceChildren(numberElement(current));
-    if (!picks.includes(current)) picks.push(current);
-    savePicks();
-    status.textContent = `${current}번. 저장된 번호 ${picks.join(', ')}.${picks.length === 6 ? ' 다음 추첨부터 새로운 6개를 저장합니다.' : ''}`;
-  } catch (error) {
-    if (animation) animation.cancel();
-    reel.replaceChildren(numberElement(current));
-    status.textContent = '추첨하지 못했어요. 다시 눌러 주세요.';
+
+    if(animation) animation.cancel();
+    mode.reel.replaceChildren(numberElement(result));
+    picks.push(result);
+    picksByMode[modeName] = picks;
+    savePicks(mode,picks);
+    renderSaved(modeName);
+    mode.status.textContent = `${result}번. 저장된 번호 ${picks.join(', ')}.${picks.length === 6 ? ' 다음 추첨부터 새로운 6개를 저장합니다.' : ''}`;
+  }catch(error){
+    if(animation) animation.cancel();
+    mode.reel.replaceChildren(numberElement(picksByMode[modeName].at(-1) || 1));
+    mode.status.textContent = '추첨하지 못했어요. 다시 눌러 주세요.';
     console.error(error);
-  } finally {
+  }finally{
     busy = false;
-    button.disabled = false;
-    button.textContent = '추첨';
+    mode.draw.disabled = false;
+    mode.reset.disabled = false;
+    mode.draw.textContent = mode.label;
   }
-});
+}
+
+modes.normal.draw.addEventListener('click',()=>drawForMode('normal'));
+modes.history.draw.addEventListener('click',()=>drawForMode('history'));
+
+refreshWeekly.addEventListener('click',loadWeeklyResult);
+loadWeeklyResult();
+setInterval(loadWeeklyResult,60*60*1000);
 </script>
 </body>
 </html>
